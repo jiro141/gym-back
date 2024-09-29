@@ -1,24 +1,38 @@
 // src/models/payment.js
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
-const User = require('./user');
+const Client = require('./client');
 
 const Payment = sequelize.define('Payment', {
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true
+  },
   amount: {
     type: DataTypes.FLOAT,
     allowNull: false
   },
-  date: {
-    type: DataTypes.DATEONLY,
+  paymentDate: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
+  },
+  paymentType: {
+    type: DataTypes.STRING,
     allowNull: false
   },
-  userId: {
+  nextPaymentDue: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  clientId: {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: User,
+      model: Client,
       key: 'id'
-    }
+    },
+    onDelete: 'CASCADE'
   }
 });
 

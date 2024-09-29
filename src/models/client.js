@@ -1,6 +1,7 @@
 // src/models/client.js
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/database");
+const Payment = require("./payment"); // Asegurarse de importar Payment
 
 const Client = sequelize.define("Client", {
   id: {
@@ -35,6 +36,7 @@ const Client = sequelize.define("Client", {
   },
   renewalDate: {
     type: DataTypes.DATE,
+    allowNull: true,
   },
   expirationDate: {
     type: DataTypes.DATE,
@@ -42,7 +44,7 @@ const Client = sequelize.define("Client", {
   },
   isActive: {
     type: DataTypes.BOOLEAN,
-    defaultValue: true,
+    defaultValue: false, // Indica asistencia diaria
   },
   isExpired: {
     type: DataTypes.BOOLEAN,
@@ -56,77 +58,77 @@ const Client = sequelize.define("Client", {
     type: DataTypes.FLOAT,
     defaultValue: 0.0,
   },
+  attendanceCounter: {
+    // Contador de asistencia mensual
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
   attendance: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
   },
 });
 
-Client.beforeCreate((client) => {
+// Relación con el modelo Payment
+Client.hasMany(Payment, { foreignKey: "clientId", as: "payments" });
+Payment.belongsTo(Client, { foreignKey: "clientId" });
+
+// Función para actualizar el estado de la membresía
+function updateMembershipStatus(client) {
   const today = new Date();
-  client.registrationDate = today;
 
-  switch (client.membershipType) {
-    case "semanal":
-      client.expirationDate = new Date(
-        today.getTime() + 7 * 24 * 60 * 60 * 1000
-      ); // Añadir 7 días
-      break;
-    case "mensual":
-      client.expirationDate = new Date(today.setMonth(today.getMonth() + 1)); // Añadir 1 mes
-      break;
-    case "permanente":
-      client.expirationDate = null; // No hay fecha de vencimiento para membresías permanentes
-      client.isActive = true;
-      client.isExpired = false;
-      break;
-    default:
-      throw new Error("Invalid membership type");
-  }
-
-  if (client.membershipType !== "permanente") {
-    client.isExpired = client.expirationDate < today;
-    client.isActive = !client.isExpired;
-  }
-});
-
-Client.beforeUpdate((client) => {
-  if (client.renewalDate || client.expirationDate) {
-    const today = new Date();
-
-    if (client.expirationDate) {
-      client.isExpired = client.expirationDate < today;
-      client.isActive = !client.isExpired;
+  // Si la membresía es permanente
+  if (client.membershipType === "permanente") {
+    client.expirationDate = null;
+    client.isActive = true;
+    client.isExpired = false;
+  } else {
+    // Calcular la fecha de vencimiento según el tipo de membresía
+    if (!client.renewalDate) {
+      client.renewalDate = today;
     }
 
     switch (client.membershipType) {
       case "semanal":
         client.expirationDate = new Date(
-          today.getTime() + 7 * 24 * 60 * 60 * 1000
+          client.renewalDate.getTime() + 7 * 24 * 60 * 60 * 1000
         ); // Añadir 7 días
         break;
       case "mensual":
-        client.expirationDate = new Date(today.setMonth(today.getMonth() + 1)); // Añadir 1 mes
-        break;
-      case "permanente":
-        client.expirationDate = null; // No hay fecha de vencimiento para membresías permanentes
-        client.isActive = true;
-        client.isExpired = false;
+        const newDate = new Date(client.renewalDate);
+        client.expirationDate = new Date(
+          newDate.setMonth(newDate.getMonth() + 1)
+        ); // Añadir 1 mes
         break;
     }
 
-    if (client.membershipType !== "permanente") {
+    // Actualizar el estado basado en la fecha de vencimiento
+    if (client.expirationDate) {
+      client.isExpired = client.expirationDate < today;
+      client.isActive = !client.isExpired;
+    }
+
+    // Calcular el porcentaje de lealtad basado en la fecha de vencimiento
+    if (client.expirationDate && !client.isExpired) {
       const timeDifference = client.expirationDate.getTime() - today.getTime();
-      const daysDifference = timeDifference / (1000 * 3600 * 24);
+      const daysDifference = timeDifference / (1000 * 3600 * 24); // Diferencia en días
       client.loyaltyPercentage = Math.max(
         0,
         Math.min(100, (daysDifference / 30) * 100)
       );
-
-      client.isExpired = client.expirationDate < today;
-      client.isActive = !client.isExpired;
+    } else {
+      client.loyaltyPercentage = 0;
     }
   }
+}
+
+// Hooks para actualizar el estado de la membresía antes de crear y actualizar
+Client.beforeCreate((client) => {
+  updateMembershipStatus(client);
+});
+
+Client.beforeUpdate((client) => {
+  updateMembershipStatus(client);
 });
 
 module.exports = Client;
