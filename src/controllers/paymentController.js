@@ -1,34 +1,13 @@
-// src/controllers/paymentController.js
-const Payment = require('../models/payment');
-const Client = require('../models/client');
+const Payment = require("../models/payment");
 
 exports.createPayment = async (req, res) => {
   try {
-    const { clientId, amount, paymentType } = req.body;
+    const { amount, currency } = req.body;
 
-    // Verificar que el cliente exista
-    const client = await Client.findByPk(clientId);
-    if (!client) {
-      return res.status(404).json({ error: 'Client not found' });
-    }
-
-    // Calcular la fecha del próximo pago dependiendo del tipo de membresía
-    let nextPaymentDue = null;
-    const today = new Date();
-
-    if (client.membershipType === 'semanal') {
-      nextPaymentDue = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 días
-    } else if (client.membershipType === 'mensual') {
-      nextPaymentDue = new Date(today.setMonth(today.getMonth() + 1)); // 1 mes
-    } else if (client.membershipType === 'permanente') {
-      nextPaymentDue = null;  // Membresía permanente no tiene próximo pago
-    }
-
+    // Crear un nuevo pago
     const payment = await Payment.create({
-      clientId,
       amount,
-      paymentType,
-      nextPaymentDue
+      currency,
     });
 
     res.status(201).json(payment);
@@ -37,22 +16,11 @@ exports.createPayment = async (req, res) => {
   }
 };
 
-exports.getPaymentsByClient = async (req, res) => {
+exports.getPayments = async (req, res) => {
   try {
-    const { clientId } = req.params;
-
-    const client = await Client.findByPk(clientId, {
-      include: {
-        model: Payment,
-        as: 'payments'
-      }
-    });
-
-    if (!client) {
-      return res.status(404).json({ error: 'Client not found' });
-    }
-
-    res.status(200).json(client.payments);
+    // Obtener todos los pagos
+    const payments = await Payment.findAll();
+    res.status(200).json(payments);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -61,19 +29,40 @@ exports.getPaymentsByClient = async (req, res) => {
 exports.updatePayment = async (req, res) => {
   try {
     const { id } = req.params;
-    const { amount, paymentDate } = req.body;
+    const { amount, currency } = req.body;
 
+    // Buscar el pago por su ID
     const payment = await Payment.findByPk(id);
     if (!payment) {
-      return res.status(404).json({ error: 'Payment not found' });
+      return res.status(404).json({ error: "Payment not found" });
     }
 
+    // Actualizar el pago
     await payment.update({
       amount,
-      paymentDate
+      currency,
     });
 
     res.status(200).json(payment);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.deletePayment = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Buscar el pago por su ID
+    const payment = await Payment.findByPk(id);
+    if (!payment) {
+      return res.status(404).json({ error: "Payment not found" });
+    }
+
+    // Eliminar el pago
+    await payment.destroy();
+
+    res.status(200).json({ message: "Payment deleted successfully" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

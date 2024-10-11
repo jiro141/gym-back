@@ -1,4 +1,3 @@
-// src/models/client.js
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/database");
 const Payment = require("./payment"); // Asegurarse de importar Payment
@@ -40,11 +39,11 @@ const Client = sequelize.define("Client", {
   },
   expirationDate: {
     type: DataTypes.DATE,
-    allowNull: true, // Permitir valores nulos para manejar membresías permanentes
+    allowNull: true,
   },
   isActive: {
     type: DataTypes.BOOLEAN,
-    defaultValue: false, // Indica asistencia diaria
+    defaultValue: false,
   },
   isExpired: {
     type: DataTypes.BOOLEAN,
@@ -59,7 +58,6 @@ const Client = sequelize.define("Client", {
     defaultValue: 0.0,
   },
   attendanceCounter: {
-    // Contador de asistencia mensual
     type: DataTypes.INTEGER,
     defaultValue: 0,
   },
@@ -67,11 +65,19 @@ const Client = sequelize.define("Client", {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
   },
+  paymentId: {
+    // Este campo guarda la referencia al último pago relacionado con el cliente
+    type: DataTypes.INTEGER,
+    references: {
+      model: "Payments", // Nombre de la tabla de pagos
+      key: "id",
+    },
+    allowNull: true, // Esto es opcional, puede ser null si no hay un pago relacionado todavía
+  },
 });
 
-// Relación con el modelo Payment
+// Asociación: Un cliente tiene muchos pagos
 Client.hasMany(Payment, { foreignKey: "clientId", as: "payments" });
-Payment.belongsTo(Client, { foreignKey: "clientId" });
 
 // Función para actualizar el estado de la membresía
 function updateMembershipStatus(client) {
