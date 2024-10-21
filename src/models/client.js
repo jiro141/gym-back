@@ -74,6 +74,11 @@ const Client = sequelize.define("Client", {
     },
     allowNull: true, // Esto es opcional, puede ser null si no hay un pago relacionado todavía
   },
+  fingerprintData: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    comment: "Encrypted biometric data object",
+  },
 });
 
 // Asociación: Un cliente tiene muchos pagos
