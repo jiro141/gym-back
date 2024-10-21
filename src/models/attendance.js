@@ -1,7 +1,6 @@
-// src/models/attendance.js
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
-const User = require('./user');
+const User = require('./user'); // Asegúrate de que User está correctamente importado
 
 const Attendance = sequelize.define('Attendance', {
   date: {
@@ -15,6 +14,11 @@ const Attendance = sequelize.define('Attendance', {
       model: User,
       key: 'id'
     }
+  },
+  // Nuevo campo para almacenar el hash de la publicKey (huella dactilar)
+  fingerprintData: {
+    type: DataTypes.STRING,
+    allowNull: true // Puede ser null si se usa idNumber en lugar de huella dactilar
   }
 });
 
