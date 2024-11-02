@@ -1,6 +1,6 @@
 const Client = require("../models/client");
 const Attendance = require("../models/attendance");
-const crypto = require('crypto'); // Usamos crypto para generar el hash de la publicKey
+const { Sequelize } = require("sequelize");
 
 exports.markAttendance = async (req, res) => {
   try {
@@ -8,32 +8,43 @@ exports.markAttendance = async (req, res) => {
 
     let client;
 
-    // Si se proporciona fingerprintData, intentar encontrar al cliente por el rawId o id
-    if (fingerprintData && (fingerprintData.rawId || fingerprintData.id)) {
-      const receivedRawId = fingerprintData.rawId || fingerprintData.id; // Usa rawId o id del fingerprintData
-      const receivedPublicKeyHash = hashPublicKey(fingerprintData.publicKey); // Hasheamos la publicKey
+    // Función para convertir JSON a array de valores
+    const convertJsonToArray = (json) => {
+      return Array.isArray(json) ? json : Object.values(json).map(value => parseFloat(value));
+    };
 
-      // Buscar al cliente usando el rawId o id del dispositivo biométrico
-      client = await Client.findOne({
+    // Función para calcular la similitud cosenoidal entre dos descriptores
+    const calculateCosineSimilarity = (descriptor1, descriptor2) => {
+      const dotProduct = descriptor1.reduce((sum, value, i) => sum + value * descriptor2[i], 0);
+      const magnitude1 = Math.sqrt(descriptor1.reduce((sum, value) => sum + Math.pow(value, 2), 0));
+      const magnitude2 = Math.sqrt(descriptor2.reduce((sum, value) => sum + Math.pow(value, 2), 0));
+      return dotProduct / (magnitude1 * magnitude2);
+    };
+
+    // Verifica si se proporcionó fingerprintData
+    if (fingerprintData) {
+      // Convertimos `fingerprintData` a array de valores
+      const receivedDescriptor = convertJsonToArray(fingerprintData);
+
+      // Buscar todos los clientes con fingerprintData almacenado (no null)
+      const clients = await Client.findAll({
         where: {
-          fingerprintRawId: receivedRawId
-        }
+          fingerprintData: { [Sequelize.Op.not]: null } // Selecciona donde fingerprintData no es null
+        },
       });
 
-      // Si el cliente no es encontrado por rawId, podemos intentar por el hash de la publicKey como respaldo
-      if (!client) {
-        client = await Client.findOne({
-          where: {
-            fingerprintPublicKey: receivedPublicKeyHash
-          }
-        });
-      }
+      // Comparar el descriptor recibido con el de cada cliente usando similitud cosenoidal
+      client = clients.find((c) => {
+        const storedDescriptor = convertJsonToArray(c.fingerprintData); // Convertir fingerprintData almacenado a array
+        const similarity = calculateCosineSimilarity(receivedDescriptor, storedDescriptor);
+        return similarity > 0.6; // Umbral de similitud del 60% o más para coincidir
+      });
 
       if (!client) {
-        return res.status(404).json({ error: "Client not found by fingerprint" });
+        return res.status(404).json({ error: "Client not found by fingerprintData" });
       }
     }
-    // Si se proporciona el idNumber, buscar al cliente por el número de identificación
+    // Si no se proporciona fingerprintData, intenta buscar por idNumber
     else if (idNumber) {
       client = await Client.findOne({ where: { idNumber } });
       if (!client) {
@@ -49,7 +60,7 @@ exports.markAttendance = async (req, res) => {
     const newAttendance = await Attendance.create({
       date: new Date(), // Fecha actual
       userId: client.id, // ID del cliente
-      fingerprintData: fingerprintData ? hashPublicKey(fingerprintData.publicKey) : null, // Guardamos el hash si se usó la huella
+      fingerprintData: fingerprintData || null, // Guardamos el descriptor si se usó la detección de rostro
     });
 
     // Marcar la asistencia del cliente como verdadera (si es necesario)
@@ -64,9 +75,4 @@ exports.markAttendance = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-};
-
-// Función para generar el hash de la publicKey
-const hashPublicKey = (publicKey) => {
-  return crypto.createHash('sha256').update(publicKey).digest('hex');
 };
