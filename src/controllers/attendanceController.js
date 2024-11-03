@@ -80,7 +80,7 @@ exports.markAttendance = async (req, res) => {
                 return res.status(500).json({ error: "No labeled descriptors found for comparison" });
             }
 
-            const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.9);
+            const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.5);
 
             // Validar que fingerprintData es un array con la longitud adecuada (suponiendo 128)
             if (!Array.isArray(fingerprintData) || fingerprintData.length !== 128) {
