@@ -3,7 +3,6 @@ const Attendance = require("../models/attendance"); // Importa el modelo Attenda
 const { Sequelize } = require("sequelize");
 const faceapi = require('face-api.js');
 const canvas = require('canvas');
-const tf = require('@tensorflow/tfjs-node');
 const path = require('path');
 
 // Integración de `canvas` con `face-api.js` para su uso en Node.js
