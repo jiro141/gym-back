@@ -65,15 +65,6 @@ const Client = sequelize.define("Client", {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
   },
-  paymentId: {
-    // Este campo guarda la referencia al último pago relacionado con el cliente
-    type: DataTypes.INTEGER,
-    references: {
-      model: "Payments", // Nombre de la tabla de pagos
-      key: "id",
-    },
-    allowNull: true, // Esto es opcional, puede ser null si no hay un pago relacionado todavía
-  },
   fingerprintData: {
     type: DataTypes.JSON,
     allowNull: true,
@@ -81,8 +72,10 @@ const Client = sequelize.define("Client", {
   },
 });
 
-// Asociación: Un cliente tiene muchos pagos
-Client.hasMany(Payment, { foreignKey: "clientId", as: "payments" });
+Client.hasMany(Payment, {
+  foreignKey: "clientID",
+  as: "Payments", // Alias para usar en las consultas
+});
 
 // Función para actualizar el estado de la membresía
 function updateMembershipStatus(client) {

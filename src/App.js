@@ -51,5 +51,12 @@ sequelize
   .catch((err) => {
     console.error("Unable to connect to the database:", err);
   });
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err.message);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+});
 
 module.exports = app;

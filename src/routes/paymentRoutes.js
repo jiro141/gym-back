@@ -9,6 +9,9 @@ router.post("/", authenticateToken, paymentController.createPayment);
 // Ruta para obtener todos los pagos (requiere autenticación)
 router.get("/", authenticateToken, paymentController.getPayments);
 
+// Ruta para obtener los pagos agrupados por cliente y ordenados por fecha (requiere autenticación)
+router.get("/grouped", authenticateToken, paymentController.getPaymentsGroupedByClient);
+
 // Ruta para actualizar un pago por su ID (requiere autenticación)
 router.put("/:id", authenticateToken, paymentController.updatePayment);
 
