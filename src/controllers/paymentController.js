@@ -5,16 +5,12 @@ exports.createPayment = async (req, res) => {
   try {
     const { amount, currency, clientID } = req.body;
 
-    // Verificar que clientID esté presente
-    if (!clientID) {
-      return res.status(400).json({ error: "clientID is required" });
-    }
-
-    // Crear un nuevo pago
+    // No es necesario verificar si clientID está presente, se puede permitir nulo
+    // Si el clientID no está presente (es nulo o undefined), lo dejamos como null en la base de datos
     const payment = await Payment.create({
       amount,
       currency,
-      clientID, // Agregamos el clientID aquí
+      clientID: clientID || null, // Si clientID está vacío o no se proporciona, se guarda como null
     });
 
     res.status(201).json(payment);
@@ -79,22 +75,22 @@ exports.getPaymentsWithClient = async (req, res) => {
 //pagos con nombres de clientes en orden
 exports.getPaymentsGroupedByClient = async (req, res) => {
   try {
-    // Consulta SQL para obtener pagos y los datos del cliente
+    // Consulta SQL para obtener pagos y los datos del cliente, con LEFT JOIN para permitir valores nulos en clientID
     const [results, metadata] = await sequelize.query(`
       SELECT 
-          Clients.firstName AS client,
+          COALESCE(Clients.firstName, 'visitante') AS client,  -- Usamos COALESCE para asignar 'visitante' si no hay cliente
           Payments.amount,
           Payments.currency,
           Payments.createdAt
       FROM 
           Payments
-      JOIN 
+      LEFT JOIN 
           Clients ON Payments.clientID = Clients.id
       ORDER BY 
           Payments.createdAt DESC;
     `);
 
-    // Agrupar los pagos por cliente
+    // Agrupar los pagos por cliente (o 'visitante' si no hay cliente)
     const groupedPayments = results.reduce((acc, payment) => {
       const clientName = payment.client;
 
@@ -125,6 +121,7 @@ exports.getPaymentsGroupedByClient = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 
 exports.updatePayment = async (req, res) => {
   try {

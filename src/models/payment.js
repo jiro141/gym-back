@@ -21,7 +21,6 @@ const Payment = sequelize.define(
     // Agregamos el campo clientID como clave foránea
     clientID: {
       type: DataTypes.INTEGER,
-      allowNull: false,
       references: {
         model: "Clients", // Aquí referenciamos la tabla 'Clients'
         key: "id", // La columna 'id' de Clients será la clave primaria
