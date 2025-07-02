@@ -98,7 +98,6 @@ exports.markAttendance = async (req, res) => {
   try {
     const { idNumber, fingerprintData = null } = req.body;
     let client;
-    console.log(client, "datos");
 
     // Verifica si se proporcionó fingerprintData para reconocimiento facial
     if (fingerprintData) {
