@@ -1,7 +1,7 @@
 const express = require("express");
-const authenticateToken = require("../middleware/authMiddleware");
-const rutinaController = require("../controllers/rutinaController")
 const router = express.Router();
+const { generateRoutinePdf } = require("../controllers/rutinaController");
 
-router.post('/rutinas', authenticateToken, );
+router.post("/", generateRoutinePdf);
+
 module.exports = router;

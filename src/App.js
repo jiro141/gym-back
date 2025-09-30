@@ -8,7 +8,7 @@ const userRoutes = require("./routes/userRoutes");
 const clientRoutes = require("./routes/clientRoutes");
 const attendanceRoutes = require("./routes/attendanceRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
-const totalPaymentRoutes = require("./routes/totalPaymentRoutes"); // Importa las rutas de totalPayments
+const totalPaymentRoutes = require("./routes/totalPaymentRoutes");
 const rutinasRoutes = require("./routes/rutinasRoutes");
 const fingerprintRoutes = require("./routes/fingerprintRoutes");
 
@@ -38,7 +38,7 @@ app.use("/api/clients", clientRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/payments", paymentRoutes); // Rutas para CRUD de pagos
 app.use("/api/total-payments", totalPaymentRoutes);
-app.use("/api/rutinas", rutinasRoutes); 
+app.use("/api/rutinas", rutinasRoutes);
 
 // Sincronización con la base de datos y lanzamiento del servidor
 sequelize
